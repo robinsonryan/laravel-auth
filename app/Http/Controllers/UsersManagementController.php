@@ -8,6 +8,7 @@ use App\Traits\CaptureIpTrait;
 use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Hash;
 use jeremykenedy\LaravelRoles\Models\Role;
 use Validator;
 
@@ -62,11 +63,12 @@ class UsersManagementController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(),
+        $validator = Validator::make(
+            $request->all(),
             [
-                'name'                  => 'required|max:255|unique:users',
-                'first_name'            => '',
-                'last_name'             => '',
+                'name'                  => 'required|max:255|unique:users|alpha_dash',
+                'first_name'            => 'alpha_dash',
+                'last_name'             => 'alpha_dash',
                 'email'                 => 'required|email|max:255|unique:users',
                 'password'              => 'required|min:6|max:20|confirmed',
                 'password_confirmation' => 'required|same:password',
@@ -94,11 +96,11 @@ class UsersManagementController extends Controller
         $profile = new Profile();
 
         $user = User::create([
-            'name'             => $request->input('name'),
-            'first_name'       => $request->input('first_name'),
-            'last_name'        => $request->input('last_name'),
+            'name'             => strip_tags($request->input('name')),
+            'first_name'       => strip_tags($request->input('first_name')),
+            'last_name'        => strip_tags($request->input('last_name')),
             'email'            => $request->input('email'),
-            'password'         => bcrypt($request->input('password')),
+            'password'         => Hash::make($request->input('password')),
             'token'            => str_random(64),
             'admin_ip_address' => $ipAddress->getClientIp(),
             'activated'        => 1,
@@ -157,19 +159,23 @@ class UsersManagementController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        $emailCheck = ($request->input('email') != '') && ($request->input('email') != $user->email);
+        $emailCheck = ($request->input('email') !== '') && ($request->input('email') !== $user->email);
         $ipAddress = new CaptureIpTrait();
 
         if ($emailCheck) {
             $validator = Validator::make($request->all(), [
-                'name'     => 'required|max:255|unique:users',
-                'email'    => 'email|max:255|unique:users',
-                'password' => 'present|confirmed|min:6',
+                'name'          => 'required|max:255|unique:users|alpha_dash',
+                'email'         => 'email|max:255|unique:users',
+                'first_name'    => 'alpha_dash',
+                'last_name'     => 'alpha_dash',
+                'password'      => 'present|confirmed|min:6',
             ]);
         } else {
             $validator = Validator::make($request->all(), [
-                'name'     => 'required|max:255|unique:users,name,'.$user->id,
-                'password' => 'nullable|confirmed|min:6',
+                'name'          => 'required|max:255|alpha_dash|unique:users,name,'.$user->id,
+                'first_name'    => 'alpha_dash',
+                'last_name'     => 'alpha_dash',
+                'password'      => 'nullable|confirmed|min:6',
             ]);
         }
 
@@ -177,20 +183,20 @@ class UsersManagementController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        $user->name = $request->input('name');
-        $user->first_name = $request->input('first_name');
-        $user->last_name = $request->input('last_name');
+        $user->name = strip_tags($request->input('name'));
+        $user->first_name = strip_tags($request->input('first_name'));
+        $user->last_name = strip_tags($request->input('last_name'));
 
         if ($emailCheck) {
             $user->email = $request->input('email');
         }
 
-        if ($request->input('password') != null) {
-            $user->password = bcrypt($request->input('password'));
+        if ($request->input('password') !== null) {
+            $user->password = Hash::make($request->input('password'));
         }
 
         $userRole = $request->input('role');
-        if ($userRole != null) {
+        if ($userRole !== null) {
             $user->detachAllRoles();
             $user->attachRole($userRole);
         }
@@ -224,7 +230,7 @@ class UsersManagementController extends Controller
         $currentUser = Auth::user();
         $ipAddress = new CaptureIpTrait();
 
-        if ($user->id != $currentUser->id) {
+        if ($user->id !== $currentUser->id) {
             $user->deleted_ip_address = $ipAddress->getClientIp();
             $user->save();
             $user->delete();

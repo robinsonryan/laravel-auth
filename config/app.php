@@ -39,7 +39,7 @@ return [
     |
     */
 
-    'debug' => env('APP_DEBUG', false),
+    'debug' => (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -175,7 +175,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-
+        \SocialiteProviders\Manager\ServiceProvider::class,
     ],
 
     /*
@@ -231,7 +231,7 @@ return [
         'Input'         => Illuminate\Support\Facades\Input::class,
         'Gravatar'      => Creativeorange\Gravatar\Facades\Gravatar::class,
         'Image'         => Intervention\Image\Facades\Image::class,
-        'Uuid'          => Webpatser\Uuid\Uuid::class,
+        'Uuid'          => jeremykenedy\Uuid\Uuid::class,
     ],
 
 ];
